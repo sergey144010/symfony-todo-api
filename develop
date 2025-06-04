@@ -1,0 +1,148 @@
+#!/usr/bin/env bash
+
+DOCKER_PROJECT_NAME="todo";
+DOCKER_FOLDER_PATH="docker";
+DOCKER_COMPOSE_FILE="docker-compose.yml"
+
+POSTGRES_DB="todo_database";
+POSTGRES_USER="user";
+POSTGRES_PASSWORD="user_password";
+POSTGRES_TEST_DB="todo_database_test";
+POSTGRES_TEST_USER="user_test";
+POSTGRES_TEST_PASSWORD="todo_password_test";
+
+DOCKER_COMPOSE="
+env DOCKER_PROJECT_NAME=${DOCKER_PROJECT_NAME} \
+DOCKER_FOLDER_PATH=${DOCKER_FOLDER_PATH} \
+POSTGRES_DB=${POSTGRES_DB} \
+POSTGRES_USER=${POSTGRES_USER} \
+POSTGRES_PASSWORD=${POSTGRES_PASSWORD} \
+POSTGRES_TEST_DB=${POSTGRES_TEST_DB} \
+POSTGRES_TEST_USER=${POSTGRES_TEST_USER} \
+POSTGRES_TEST_PASSWORD=${POSTGRES_TEST_PASSWORD} \
+docker compose -f ./${DOCKER_COMPOSE_FILE}";
+
+list=(\
+"help" \
+"docker-check" \
+"docker-phpcs" \
+"docker-phpcbf" \
+"docker-phpstan" \
+"docker-phpunit" \
+"docker-composer" \
+"docker-php" \
+"start" \
+"stop" \
+"build" \
+"rebuild" \
+"docker-console" \
+"clear-cache" \
+"clear-log" \
+"clear-session" \
+"clear-all" \
+"make-project" \
+"remove-project" \
+);
+
+if [ $# -gt 0 ]; then
+    if [ "$1" == "docker-check" ]; then
+        shift 1
+        ./develop docker-phpcs
+        ./develop docker-phpstan
+        ./develop docker-phpunit
+    elif [ "$1" == "docker-phpcs" ]; then
+        shift 1
+        ${DOCKER_COMPOSE} exec api_php-fpm \
+            php ./vendor/bin/phpcs -p "$@"
+    elif [ "$1" == "docker-phpcbf" ]; then
+        shift 1
+        ${DOCKER_COMPOSE} exec api_php-fpm \
+            php ./vendor/bin/phpcbf "$@"
+    elif [ "$1" == "docker-phpstan" ]; then
+        shift 1
+        ${DOCKER_COMPOSE} exec api_php-fpm \
+            php ./vendor/bin/phpstan "$@"
+    elif [ "$1" == "docker-phpunit" ]; then
+        shift 1
+        ${DOCKER_COMPOSE} exec api_php-fpm \
+            php ./vendor/bin/phpunit "$@"
+    elif [ "$1" == "docker-composer" ]; then
+        shift 1
+        ${DOCKER_COMPOSE} exec api_php-fpm \
+            composer "$@"
+        chmod --silent -R 777 ./vendor
+    elif [ "$1" == "docker-php" ]; then
+        shift 1
+        ${DOCKER_COMPOSE} exec api_php-fpm \
+            php "$@"
+    elif [ "$1" == "start" ]; then
+        shift 1
+        ${DOCKER_COMPOSE} up -d --remove-orphans
+    elif [ "$1" == "stop" ]; then
+        shift 1
+        ${DOCKER_COMPOSE} stop
+    elif [ "$1" == "build" ]; then
+        shift 1
+        ${DOCKER_COMPOSE} up -d --build
+    elif [ "$1" == "rebuild" ]; then
+        shift 1
+        ${DOCKER_COMPOSE} up -d --no-deps --build "$@"
+    elif [ "$1" == "docker-console" ]; then
+        shift 1
+        ${DOCKER_COMPOSE} exec api_php-fpm \
+            ./bin/console "$@"
+    elif [ "$1" == "clear-cache" ]; then
+        shift 1
+        ${DOCKER_COMPOSE} exec api_php-fpm \
+            rm -rf ./var/cache/*
+    elif [ "$1" == "clear-log" ]; then
+        shift 1
+        ${DOCKER_COMPOSE} exec api_php-fpm \
+            rm -rf ./var/log/*
+    elif [ "$1" == "clear-session" ]; then
+        shift 1
+        ${DOCKER_COMPOSE} exec api_php-fpm \
+            rm -rf ./var/sessions/*
+    elif [ "$1" == "clear-all" ]; then
+        shift 1
+        ./develop clear-cache
+        ./develop clear-log
+        ./develop clear-session
+    elif [ "$1" == "make-project" ]; then
+        shift 1
+        echo -e "\n" >> .env.local
+        echo -e "APP_ENV=dev" >> .env.local
+        echo -e "DB_HOST=api_postgres" >> .env.local
+        echo -e "DB_NAME=${POSTGRES_DB}" >> .env.local
+        echo -e "DB_USER=${POSTGRES_USER}" >> .env.local
+        echo -e "DB_PASSWORD=${POSTGRES_PASSWORD}" >> .env.local
+        echo -e "DB_PORT=5432" >> .env.local
+        echo -e "\n" >> .env.test.local
+        echo -e "APP_ENV=test" >> .env.test.local
+        echo -e "DB_HOST=api_postgrestest" >> .env.test.local
+        echo -e "DB_NAME=${POSTGRES_TEST_DB}" >> .env.test.local
+        echo -e "DB_USER=${POSTGRES_TEST_USER}" >> .env.test.local
+        echo -e "DB_PASSWORD=${POSTGRES_TEST_PASSWORD}" >> .env.test.local
+        echo -e "DB_PORT=5432" >> .env.test.local
+        ./develop start
+        ./develop docker-composer install --optimize-autoloader
+        ./develop docker-console lexik:jwt:generate-keypair
+    elif [ "$1" == "remove-project" ]; then
+        shift 1
+        ./develop stop
+        docker rm $(docker ps -a --format '{{.ID}}' --filter name=${DOCKER_PROJECT_NAME})
+        docker volume rm $(docker volume ls --filter name=${DOCKER_PROJECT_NAME} --format '{{.Name}}')
+        docker image rm -f $(docker images --filter=reference="${DOCKER_PROJECT_NAME}*" --format '{{.ID}}')
+        docker network rm $(docker network ls --filter name=${DOCKER_PROJECT_NAME} --format '{{.Name}}')
+    elif [ "$1" == "help" ]; then
+        shift 1
+        for i in ${list[@]}
+          do
+            echo $i
+          done
+    else
+        echo "./develop: Unknown command '$@'"
+    fi
+else
+    echo "./develop: You must specify some command"
+fi
