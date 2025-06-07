@@ -112,7 +112,7 @@
 				"header": [],
 				"body": {
 					"mode": "raw",
-					"raw": "{\n    \"username\": \"test@test.ru\",\n    \"password\": \"0123456789\"\n}",
+					"raw": "{\n    \"username\": \"test@test.com\",\n    \"password\": \"0123456789\"\n}",
 					"options": {
 						"raw": {
 							"language": "json"
