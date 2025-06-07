@@ -1,0 +1,59 @@
+nelmio_api_doc:
+    documentation:
+        info:
+            title: My App
+            description: This is an awesome app!
+            version: 1.0.0
+        components:
+            schemas:
+                SuccessRegistrationResponse:
+                    type: object
+                    properties:
+                        status:
+                            type: string
+                            example: 'success'
+                        data:
+                            type: object
+                            properties:
+                                message:
+                                    type: string
+                                    example: 'User registered successfully'
+                                id:
+                                    type: integer
+                                    example: 1
+                ValidationErrorResponse:
+                    type: object
+                    properties:
+                        status:
+                            type: string
+                            example: 'fail'
+                        data:
+                            type: object
+                            properties:
+                                message:
+                                    type: string
+                                    example: 'Validation failed'
+                                errors:
+                                    type: object
+                                    properties:
+                                        email:
+                                            type: string
+                                            example: 'This value is not a valid email address.'
+                                        password:
+                                            type: string
+                                            example: 'This value is too short.'
+                                        name:
+                                            type: string
+                                            example: 'This value is too short.'
+                ServerErrorResponse:
+                    type: object
+                    properties:
+                        status:
+                            type: string
+                            example: 'error'
+                        message:
+                            type: string
+                            example: 'Internal server error'
+    areas: # to filter documented areas
+        path_patterns:
+            - ^/api(?!/doc$) # Accepts routes under /api except /api/doc
