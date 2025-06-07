@@ -7,9 +7,14 @@ DOCKER_COMPOSE_FILE="docker-compose.yml"
 POSTGRES_DB="todo_database";
 POSTGRES_USER="user";
 POSTGRES_PASSWORD="user_password";
+POSTGRES_HOST="api_postgres";
+POSTGRES_PORT="5432";
+
 POSTGRES_TEST_DB="todo_database_test";
 POSTGRES_TEST_USER="user_test";
 POSTGRES_TEST_PASSWORD="todo_password_test";
+POSTGRES_TEST_HOST="api_postgrestest";
+POSTGRES_TEST_PORT="5432";
 
 DOCKER_COMPOSE="
 env DOCKER_PROJECT_NAME=${DOCKER_PROJECT_NAME} \
@@ -42,6 +47,8 @@ list=(\
 "clear-all" \
 "make-project" \
 "remove-project" \
+"docker-migration" \
+"docker-migrate" \
 );
 
 if [ $# -gt 0 ]; then
@@ -73,8 +80,7 @@ if [ $# -gt 0 ]; then
         chmod --silent -R 777 ./vendor
     elif [ "$1" == "docker-php" ]; then
         shift 1
-        ${DOCKER_COMPOSE} exec api_php-fpm \
-            php "$@"
+        ${DOCKER_COMPOSE} exec api_php-fpm "$@"
     elif [ "$1" == "start" ]; then
         shift 1
         ${DOCKER_COMPOSE} up -d --remove-orphans
@@ -91,6 +97,12 @@ if [ $# -gt 0 ]; then
         shift 1
         ${DOCKER_COMPOSE} exec api_php-fpm \
             ./bin/console "$@"
+    elif [ "$1" == "docker-migration" ]; then
+        shift 1
+        ./develop docker-console make:migration
+    elif [ "$1" == "docker-migrate" ]; then
+        shift 1
+        ./develop docker-console doctrine:migrations:migrate
     elif [ "$1" == "clear-cache" ]; then
         shift 1
         ${DOCKER_COMPOSE} exec api_php-fpm \
@@ -110,25 +122,27 @@ if [ $# -gt 0 ]; then
         ./develop clear-session
     elif [ "$1" == "make-project" ]; then
         shift 1
+        jwt=$(LC_ALL=C tr -dc 'A-Za-z0-9@#%^&*()_+=-{}[]:;<>,.?/' < /dev/urandom | head -c 32 | xargs echo)
         echo -e "\n" >> .env.local
         echo -e "APP_ENV=dev" >> .env.local
-        echo -e "DB_HOST=api_postgres" >> .env.local
-        echo -e "DB_NAME=${POSTGRES_DB}" >> .env.local
-        echo -e "DB_USER=${POSTGRES_USER}" >> .env.local
-        echo -e "DB_PASSWORD=${POSTGRES_PASSWORD}" >> .env.local
-        echo -e "DB_PORT=5432" >> .env.local
+        echo -e "DATABASE_URL=postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@${POSTGRES_HOST}:${POSTGRES_PORT}/${POSTGRES_DB}?serverVersion=17&charset=utf8" >> .env.local
+        echo -e "JWT_PASSPHRASE="${jwt} >> .env.local
         echo -e "\n" >> .env.test.local
         echo -e "APP_ENV=test" >> .env.test.local
-        echo -e "DB_HOST=api_postgrestest" >> .env.test.local
-        echo -e "DB_NAME=${POSTGRES_TEST_DB}" >> .env.test.local
-        echo -e "DB_USER=${POSTGRES_TEST_USER}" >> .env.test.local
-        echo -e "DB_PASSWORD=${POSTGRES_TEST_PASSWORD}" >> .env.test.local
-        echo -e "DB_PORT=5432" >> .env.test.local
+        echo -e "DATABASE_URL=postgresql://${POSTGRES_TEST_USER}:${POSTGRES_TEST_PASSWORD}@${POSTGRES_TEST_HOST}:${POSTGRES_TEST_PORT}/${POSTGRES_TEST_DB}?serverVersion=17&charset=utf8" >> .env.test.local
+        echo -e "JWT_PASSPHRASE="${jwt} >> .env.test.local
+        echo -e "KERNEL_CLASS='App\Kernel'" >> .env.test.local
+        echo -e "APP_SECRET='$ecretf0rt3st'" >> .env.test.local
         ./develop start
         ./develop docker-composer install --optimize-autoloader
         ./develop docker-console lexik:jwt:generate-keypair
+        ./develop docker-console --env=test doctrine:schema:create
     elif [ "$1" == "remove-project" ]; then
         shift 1
+        ./develop docker-php rm ./.env.local
+        ./develop docker-php rm ./.env.test.local
+        ./develop docker-php rm ./config/jwt/private.pem
+        ./develop docker-php rm ./config/jwt/public.pem
         ./develop stop
         docker rm $(docker ps -a --format '{{.ID}}' --filter name=${DOCKER_PROJECT_NAME})
         docker volume rm $(docker volume ls --filter name=${DOCKER_PROJECT_NAME} --format '{{.Name}}')
