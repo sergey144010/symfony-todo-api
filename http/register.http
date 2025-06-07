@@ -1,0 +1,23 @@
+### Success
+POST http://localhost:8080/api/register
+Content-Type: application/json
+
+{
+    "email": "test@test.com",
+    "password": "0123456789",
+    "name": "TestOne"
+}
+
+### Validation error
+POST http://localhost:8080/api/register
+Content-Type: application/json
+
+{
+    "email": "invalid-email",
+    "password": "123",
+    "name": ""
+}
+
+###
+
+

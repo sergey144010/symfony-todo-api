@@ -1,0 +1,38 @@
+### Create task
+POST http://localhost:8080/api/task
+Content-Type: application/json
+Authorization: Bearer ...
+
+{
+    "title": "Task title 1",
+    "description": "Task description 1",
+    "deadline": "2025-11-11"
+}
+
+### Get task list
+#GET http://localhost:8080/api/task?deadline=2025-12-12&status=1
+GET http://localhost:8080/api/task
+Content-Type: application/json
+Authorization: Bearer ...
+
+### Get task
+GET http://localhost:8080/api/task/13
+Content-Type: application/json
+Authorization: Bearer ...
+
+### Delete task
+DELETE http://localhost:8080/api/task/2
+Content-Type: application/json
+Authorization: Bearer ...
+
+### Update task
+PATCH http://localhost:8080/api/task/2
+Content-Type: application/json
+Authorization: Bearer ...
+
+{
+    "title": "Title 333 33",
+    "description": "Description 333",
+    "deadline": "2025-08-01",
+    "status": 1
+}
