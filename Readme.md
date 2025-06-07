@@ -25,7 +25,7 @@ Api resources:
 - `/api/register` user registration
 - `/api/token` take user token
 - `/api/task` get list tasks (GET), create task (POST)
-- `/api/task/{id}` update task (PATCH), delete task (DELETE)
+- `/api/task/{id}` get task (GET), update task (PATCH), delete task (DELETE)
 - `/api/doc` api doc
 
 # Postman
