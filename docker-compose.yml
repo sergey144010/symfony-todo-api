@@ -70,6 +70,20 @@ services:
       PGADMIN_DEFAULT_PASSWORD: password
     networks:
       - internal
+  api_redis:
+    container_name: "${DOCKER_PROJECT_NAME}_redis"
+    build: ./${DOCKER_FOLDER_PATH}/redis/
+    networks:
+      - internal
+  api_rediscommander:
+    container_name: "${DOCKER_PROJECT_NAME}_rediscommander"
+    build: ./${DOCKER_FOLDER_PATH}/rediscommander/
+    ports:
+      - 8083:8081
+    environment:
+      - REDIS_HOSTS=local:api_redis:6379
+    networks:
+      - internal
 volumes:
   postgres_volume:
     driver: local
