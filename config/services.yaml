@@ -29,3 +29,6 @@ services:
                     'createdAt': '@App\Serializer\DateTimeCallback',
                     'deadline': '@App\Serializer\DateTimeCallback'
                 }
+
+    App\Service\Task\TaskManagerInterface:
+        class: App\Service\Task\TaskManagerCache

@@ -2,12 +2,11 @@
 
 namespace App\Controller;
 
-use App\Entity\User;
 use App\Service\Task\Dto\CreateTaskDto;
 use App\Service\Task\Dto\TaskListFilterDto;
 use App\Service\Task\Dto\UpdateTaskDto;
 use App\Service\Task\Exceptions\UpdateException;
-use App\Service\Task\TaskManager;
+use App\Service\Task\TaskManagerInterface;
 use Nelmio\ApiDocBundle\Attribute\Security;
 use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\Request;
@@ -15,17 +14,11 @@ use Symfony\Component\HttpKernel\Attribute\MapQueryString;
 use Symfony\Component\HttpKernel\Attribute\MapRequestPayload;
 use Symfony\Component\Routing\Attribute\Route;
 use OpenApi\Attributes as OA;
-use Symfony\Component\Security\Http\Attribute\CurrentUser;
-use Symfony\Contracts\Cache\CacheInterface;
-use Symfony\Contracts\Cache\ItemInterface;
 
 class TaskController extends JsendController
 {
-    public const CACHE_LIST = 'tasks_list';
-
     public function __construct(
-        readonly private TaskManager $taskManager,
-        readonly private CacheInterface $cache,
+        readonly private TaskManagerInterface $taskManager,
     ) {
     }
 
@@ -37,10 +30,8 @@ class TaskController extends JsendController
     )]
     public function createTask(
         #[MapRequestPayload] CreateTaskDto $dto,
-        #[CurrentUser] User $user,
     ): JsonResponse {
         $task = $this->taskManager->create($dto);
-        $this->cache->delete($this->cacheListKey($user));
 
         return $this->respondSuccess(
             [
@@ -66,15 +57,8 @@ class TaskController extends JsendController
     )]
     public function getTaskList(
         #[MapQueryString] TaskListFilterDto $filterDto,
-        #[CurrentUser] User $user,
     ): JsonResponse {
-        $list = $this->cache->get(
-            $this->cacheListKey($user),
-            function (ItemInterface $item) use ($filterDto) {
-                $item->expiresAfter(30);
-                return $this->taskManager->listTasks($filterDto);
-            }
-        );
+        $list = $this->taskManager->listTasks($filterDto);
 
         return $this->respondSuccess($list);
     }
@@ -115,11 +99,8 @@ class TaskController extends JsendController
     )]
     public function deleteTask(
         int $id,
-        #[CurrentUser] User $user,
     ): JsonResponse {
         if ($this->taskManager->deleteById($id)) {
-            $this->cache->delete($this->cacheListKey($user));
-
             return $this->respondSuccess(
                 [
                     'message' => 'Success deleted',
@@ -144,24 +125,17 @@ class TaskController extends JsendController
     public function updateTask(
         int $id,
         #[MapRequestPayload] UpdateTaskDto $dto,
-        #[CurrentUser] User $user,
     ): JsonResponse {
         try {
             $task = $this->taskManager->updateById($id, $dto);
         } catch (UpdateException $e) {
             return $this->respondFail($e->context->context);
         }
-        $this->cache->delete($this->cacheListKey($user));
 
         return $this->respondSuccess(
             [
                 'task' => $task
             ]
         );
-    }
-
-    private function cacheListKey(User $user): string
-    {
-        return self::CACHE_LIST . '_' . $user->getId();
     }
 }

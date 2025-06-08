@@ -14,7 +14,7 @@ use App\Service\Task\Exceptions\UpdateException;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\SecurityBundle\Security;
 
-final class TaskManager
+final class TaskManager implements TaskManagerInterface
 {
     public function __construct(
         readonly private Security $security,
