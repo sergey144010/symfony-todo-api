@@ -12,6 +12,10 @@ use OpenApi\Attributes as OA;
 
 class RegistrationController extends JsendController
 {
+    #[OA\Post(
+        summary: 'Регистрация нового пользователя',
+        tags: ['Аутентификация'],
+    )]
     #[OA\Response(
         response: 200,
         description: 'Успешная регистрация пользователя',
