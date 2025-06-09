@@ -2,6 +2,7 @@
 - [Install docker](https://docs.docker.com/), if not already installed
 - [Install docker compose V2](https://docs.docker.com/compose/install/linux/), if not already installed
 - Clone project: `git clone git@github.com:sergey144010/symfony-todo-api.git`
+- `cd symfony-todo-api/`
 - `./develop make-project`
 
 # Code style, static analise, tests
