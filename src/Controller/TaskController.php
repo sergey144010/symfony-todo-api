@@ -2,11 +2,13 @@
 
 namespace App\Controller;
 
+use App\Entity\Task;
 use App\Service\Task\Dto\CreateTaskDto;
 use App\Service\Task\Dto\TaskListFilterDto;
 use App\Service\Task\Dto\UpdateTaskDto;
 use App\Service\Task\Exceptions\UpdateException;
 use App\Service\Task\TaskManagerInterface;
+use Nelmio\ApiDocBundle\Attribute\Model;
 use Nelmio\ApiDocBundle\Attribute\Security;
 use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\Request;
@@ -22,7 +24,36 @@ class TaskController extends JsendController
     ) {
     }
 
+    #[OA\Post(
+        summary: 'Создать новую задачу',
+        tags: ['Задача']
+    )]
     #[Security(name: 'Bearer')]
+    #[OA\Response(
+        response: 200,
+        description: 'Успешное создание задачи',
+        content: new OA\JsonContent(
+            properties:
+            [
+                new OA\Property(
+                    property: 'status',
+                    type: 'string',
+                    example: 'success'
+                ),
+                new OA\Property(
+                    property: 'data',
+                    type: 'object',
+                    properties:
+                        [
+                            new OA\Property(
+                                property: 'task',
+                                ref: new Model(type: Task::class)
+                            )
+                        ]
+                )
+            ]
+        )
+    )]
     #[Route(
         '/api/task',
         name: 'api_task_create',
@@ -41,13 +72,8 @@ class TaskController extends JsendController
     }
 
     #[OA\Get(
-        description: 'Get filtered tasks list',
-        parameters: [
-            new OA\QueryParameter(ref: '#/components/schemas/TaskListFilterDto')
-        ],
-        responses: [
-            new OA\Response(response: 200, description: 'Success')
-        ]
+        summary: 'Список задач',
+        tags: ['Задача'],
     )]
     #[Security(name: 'Bearer')]
     #[Route(
@@ -63,7 +89,11 @@ class TaskController extends JsendController
         return $this->respondSuccess($list);
     }
 
-    #[Security(name: 'Bearer')]
+    #[OA\Get(
+        summary: 'Одна задача',
+        tags: ['Задача'],
+    )]
+    #[Security]
     #[Route(
         '/api/task/{id}',
         name: 'api_task_get_one',
@@ -90,6 +120,10 @@ class TaskController extends JsendController
         );
     }
 
+    #[OA\Delete(
+        summary: 'Удалить задачу',
+        tags: ['Задача'],
+    )]
     #[Security(name: 'Bearer')]
     #[Route(
         '/api/task/{id}',
@@ -115,6 +149,10 @@ class TaskController extends JsendController
         );
     }
 
+    #[OA\Patch(
+        summary: 'Обновить задачу',
+        tags: ['Задача'],
+    )]
     #[Security(name: 'Bearer')]
     #[Route(
         '/api/task/{id}',
